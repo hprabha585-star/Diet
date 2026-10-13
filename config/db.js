@@ -1,8 +1,8 @@
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'fastcoach',
-  process.env.DB_USER || 'root',
+  process.env.DB_NAME || 'defaultdb',
+  process.env.DB_USER || 'avnadmin',
   process.env.DB_PASSWORD || '',
   {
     host: process.env.DB_HOST || 'localhost',
@@ -10,13 +10,12 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
     logging: false,
     define: { underscored: true, timestamps: true },
-    // Shared hosting MySQL (Hostinger included) usually caps how many
-    // connections one account can hold open at once — often in the
-    // single digits. Made explicit here so several dashboard panels
-    // loading at once queue cleanly for a free connection instead of
-    // each one quietly assuming it has its own. `acquire` is how long a
-    // request waits for a free connection before failing with a clear
-    // error, instead of the page just looking stuck with no explanation.
+    // Aiven requires SSL connections
+    dialectOptions: {
+      ssl: {
+        rejectUnauthorized: false
+      }
+    },
     pool: { max: 5, min: 0, acquire: 20000, idle: 10000 }
   }
 );
@@ -24,10 +23,13 @@ const sequelize = new Sequelize(
 async function connectDB() {
   try {
     await sequelize.authenticate();
-    console.log('MySQL connected');
+    console.log('MySQL connected successfully to Aiven');
   } catch (err) {
     console.error('MySQL connection error:', err.message);
-    process.exit(1);
+    // Do not use process.exit(1) blindly in serverless, but kept for local safety
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   }
 }
 
