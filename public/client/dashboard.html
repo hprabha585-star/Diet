@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FastCoach — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="sidebar-scrim" id="sidebar-scrim" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">FastCoach</div>
+      <div class="role-tag" id="plan-mode-tag">Client</div>
+    </div>
+    <nav>
+      <a href="#today" class="nav-link active" data-view="today"><span class="ico">☉</span><span>Today</span></a>
+      <a href="#history" class="nav-link" data-view="history"><span class="ico">☷</span><span>History &amp; weight</span></a>
+      <a href="#guide" class="nav-link" data-view="guide"><span class="ico">✎</span><span>Program guide</span></a>
+      <a href="#journal" class="nav-link" data-view="journal"><span class="ico">📓</span><span>SVR Journal</span></a>
+      <a href="#achievements" class="nav-link" data-view="achievements"><span class="ico">🏆</span><span>Your Achievements</span></a>
+      <a href="#leaderboard" class="nav-link" data-view="leaderboard"><span class="ico">★</span><span>Leaderboard</span></a>
+      <a href="#chat" class="nav-link" data-view="chat"><span class="ico">✉</span><span>Message coach</span></a>
+      <a href="#referral" class="nav-link" data-view="referral"><span class="ico">⇄</span><span>Refer &amp; earn</span></a>
+      <a href="/client/tracker.html" class="nav-link" id="nav-tracker"><span class="ico">◔</span><span>Fasting Tracker</span><span class="nav-lock" id="nav-tracker-lock">🔒</span></a>
+      <a href="#medical" class="nav-link" data-view="medical"><span class="ico">✚</span><span>Medical &amp; personal details</span></a>
+      <a href="#contact" class="nav-link" data-view="contact"><span class="ico">☎</span><span>Contact us</span></a>
+      <a href="#payment" class="nav-link" data-view="payment"><span class="ico">₹</span><span>Payment</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()" aria-label="Open menu">☰</button>
+      <h1 id="topbar-title">Today</h1>
+      <div class="topbar-right">
+        <button class="bell-btn" onclick="showView('alerts')" aria-label="Alerts">
+          🔔<span class="bell-badge" id="badge-alerts-bell" hidden>0</span>
+        </button>
+        <button id="user-chip" class="user-chip" onclick="openProfileModal()"></button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="notice notice-warn card" id="locked-notice" style="display:none;">
+        <div>
+          <strong>Your account isn't active yet.</strong>
+          <p>Submit your payment, then wait for coach approval. Message coach or contact us are open in the meantime.</p>
+        </div>
+      </div>
+
+      <!-- Shown once a client's plan validity has run out — replaces the
+           checklist/tracker entirely until they renew. -->
+      <div class="notice notice-warn card" id="expired-notice" style="display:none;">
+        <div>
+          <strong>Your plan ended on <span id="expired-due-date">—</span>.</strong>
+          <p>Renew to keep access to your dashboard, coach chat and tracking.</p>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="showView('payment')">Unlock for Premium Access</button>
+        </div>
+      </div>
+
+      <!-- TODAY -->
+      <div class="view active" id="view-today">
+        <div class="card progress-strip" id="progress-strip" style="display:none;"></div>
+        <!-- Shown only for a client who holds BOTH a coached protocol plan
+             AND the Fasting Tracker, so the tracker stays easy to reach
+             from the main Today page instead of being hidden once the
+             protocol view takes over the screen. -->
+        <div class="card hint" id="dual-tracker-card" style="display:none;margin-bottom:12px;">
+          <span id="dual-tracker-text">You also have Fasting Tracker access.</span>
+          <a class="btn btn-outline btn-sm" style="margin-left:10px;" href="/client/tracker.html">Open Fasting Tracker</a>
+        </div>
+        <div class="card hint" id="validity-banner" style="display:none;margin-bottom:12px;"></div>
+        <div class="progress-bars" id="progress-bars" style="display:none;"></div>
+
+        <div id="today-protocol" style="display:none;">
+          <div class="fasting-panels">
+            <div class="card fasting-panel">
+              <div class="panel-label">Fasting window</div>
+              <div class="panel-times">
+                <span>Starts <b id="fast-starts">—</b></span>
+                <span>Ends <b id="fast-ends">—</b></span>
+              </div>
+              <div class="panel-state" id="fast-state">—</div>
+              <div class="panel-countdown" id="fast-countdown">00:00:00</div>
+              <div class="panel-timer-label" id="fast-timer-label">elapsed</div>
+            </div>
+            <div class="card fasting-panel">
+              <div class="panel-label">Eating window</div>
+              <div class="panel-times">
+                <span>Starts <b id="eat-starts">—</b></span>
+                <span>Ends <b id="eat-ends">—</b></span>
+              </div>
+              <div class="panel-state" id="eat-state">—</div>
+              <div class="panel-countdown" id="eat-countdown">00:00:00</div>
+              <div class="panel-timer-label" id="eat-timer-label">elapsed</div>
+            </div>
+          </div>
+          <div class="card" id="pause-card" style="margin-top:16px;">
+            <div id="pause-inactive"><button class="btn btn-outline btn-sm" onclick="openPauseModal()">Pause fasting</button></div>
+            <div id="pause-active" style="display:none;">
+              <span class="badge badge-pending">Paused</span>
+              <span id="pause-reason-text" class="small muted" style="margin-left:8px;"></span>
+              <button class="btn btn-primary btn-sm" id="pause-resume-btn" style="margin-left:12px;" onclick="resumeFasting()">Resume</button>
+              <span id="pause-admin-note" class="small muted" style="margin-left:8px;display:none;">Paused by your coach — message them to resume.</span>
+            </div>
+          </div>
+
+          <div class="section-title">Day <span id="today-day">—</span> of <span id="today-total">55</span></div>
+          <p id="today-focus" class="hint" style="margin-bottom:14px;"></p>
+
+          <div class="section-subtitle">Meals</div>
+          <div id="meals-list"></div>
+          <button class="btn btn-outline btn-sm" onclick="openAddItem('meal')">+ Add your own meal</button>
+
+          <div class="section-subtitle">Habits</div>
+          <div id="habits-list"></div>
+          <button class="btn btn-outline btn-sm" onclick="openAddItem('habit')">+ Add habit</button>
+
+          <div class="section-subtitle">Water</div>
+          <div class="card">
+            <div style="font-size:15px;font-weight:600;margin-bottom:10px;">Today: <span id="water-total">0</span> ml</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="logWater(250)">+250 ml</button>
+              <button class="btn btn-outline btn-sm" onclick="logWater(500)">+500 ml</button>
+              <button class="btn btn-outline btn-sm" onclick="logWaterCustom()">Custom</button>
+            </div>
+            <div id="water-entries" style="margin-top:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Shown instead of the protocol checklist for tracker-mode clients -->
+        <div id="today-tracker-redirect" class="card" style="display:none;text-align:center;">
+          <p style="margin-bottom:14px;">Your Fasting Tracker has its own full section — schedule, timer, stages, nutrition, hydration, history and stats.</p>
+          <a class="btn btn-primary btn-sm" href="/client/tracker.html">Open Fasting Tracker</a>
+        </div>
+      </div>
+
+      <!-- The Fasting Tracker now lives on its own page: /client/tracker.html -->
+
+      <!-- HISTORY & WEIGHT -->
+      <div class="view" id="view-history">
+        <div class="card">
+          <h3>Log today's weight</h3>
+          <div class="field" style="margin-top:14px;max-width:220px;"><label>Weight (kg)</label><input type="number" id="weight-input" step="0.1"></div>
+          <button class="btn btn-primary btn-sm" onclick="logWeight()">Save</button>
+          <div class="row-between" style="margin-top:16px;align-items:baseline;">
+            <h4 id="weight-list-title" style="margin:0;font-size:13px;color:var(--muted);font-weight:600;">Last 7 days</h4>
+            <button class="btn-ghost btn-sm" id="weight-list-toggle" onclick="toggleWeightListRange()">See all entries</button>
+          </div>
+          <div id="weight-list" style="margin-top:8px;"></div>
+        </div>
+        <div class="card bmi-card" style="margin-top:16px;">
+          <h3>BMI calculator</h3>
+          <p class="hint" style="margin-top:4px;">Metric units. Fill in the values and press Calculate.</p>
+          <div class="bmi-inputs">
+            <div class="field"><label>Age</label><input type="number" id="age-input" min="2" max="120" placeholder="25">
+              <div class="hint">ages 2 – 120</div>
+            </div>
+            <div class="field">
+              <label>Gender</label>
+              <select id="gender-input"><option value="">—</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select>
+            </div>
+            <div class="field"><label>Height (cm)</label><input type="number" id="height-input" step="0.1" placeholder="180"></div>
+            <div class="field"><label>Weight (kg)</label><input type="number" id="bmi-weight-input" step="0.1" placeholder="65"></div>
+          </div>
+          <div class="bmi-actions">
+            <button class="btn btn-primary btn-sm" onclick="calculateBmi()">Calculate</button>
+            <button class="btn btn-outline btn-sm" onclick="clearBmi()">Clear</button>
+          </div>
+          <div class="error-text" id="bmi-error" style="display:none;"></div>
+          <div id="bmi-result" style="margin-top:18px;"></div>
+        </div>
+      </div>
+
+      <!-- PROGRAM GUIDE — day-by-day info your coach writes, read-only here -->
+      <div class="view" id="view-guide">
+        <div class="page-intro"><h2>Program guide</h2><p class="hint">What your coach has planned for each day.</p></div>
+        <div id="guide-list"><p class="hint">Loading…</p></div>
+      </div>
+
+      <!-- SVR JOURNAL / PERSONAL NOTES — own page, visible to every client -->
+      <div class="view" id="view-journal">
+        <div class="page-intro"><h2>SVR Journal / Personal Notes</h2><p class="hint">Topics your coach has written for you, with video links where there are any.</p></div>
+        <div id="journal-list"><p class="hint">Loading…</p></div>
+      </div>
+
+      <!-- YOUR ACHIEVEMENTS — badges earned from completed fasts -->
+      <div class="view" id="view-achievements">
+        <div class="page-intro"><h2>Your Achievements</h2><p class="hint">Badges earned from completed fasts — including any 24-hour+ fast, coach-assigned or self-guided.</p></div>
+        <div class="card" id="share-progress-card" style="margin-bottom:16px;">
+          <div style="font-weight:600;margin-bottom:4px;">Share your progress</div>
+          <p class="hint" style="margin-bottom:10px;">Your BMI, current weight, and fasting-day streak, bundled into one shareable update.</p>
+          <button class="btn btn-primary btn-sm" onclick="shareProgress()">Share everything</button>
+          <span id="share-progress-status" class="hint" style="margin-left:10px;"></span>
+        </div>
+        <div id="achievements-list"><p class="hint">Loading…</p></div>
+      </div>
+
+      <!-- LEADERBOARD -->
+      <div class="view" id="view-leaderboard">
+        <div class="page-intro"><h2>Leaderboard</h2><p class="hint">Points and streaks across the whole cohort.</p></div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="table-scroll">
+            <table class="table">
+              <thead><tr><th>#</th><th>Client</th><th>Points</th><th>Streak</th><th>Best streak</th></tr></thead>
+              <tbody id="client-leaderboard-body"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="view" id="view-alerts"><div id="alerts-list"></div></div>
+
+      <!-- CHAT -->
+      <div class="view" id="view-chat">
+        <div class="card">
+          <div id="chat-thread" style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            <input type="text" id="chat-input" placeholder="Type a message…" style="flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);">
+            <button class="btn btn-primary btn-sm" onclick="sendMessage()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERRAL -->
+      <div class="view" id="view-referral"><div class="card" id="referral-card"></div></div>
+
+      <!-- CONTACT -->
+      <!-- MEDICAL & PERSONAL DETAILS -->
+      <div class="view" id="view-medical">
+        <div class="page-intro"><h2>Medical &amp; personal details</h2><p class="hint">Tell your coach about any conditions, allergies, or medications — they'll take this into account when assigning your meals. Only your coach can see this.</p></div>
+        <div class="card">
+          <div class="field"><label>Medical conditions</label><textarea id="medical-conditions" rows="3" placeholder="e.g. Type 2 diabetes, thyroid, PCOS…"></textarea></div>
+          <div class="field"><label>Allergies</label><textarea id="medical-allergies" rows="2" placeholder="e.g. peanuts, dairy, gluten…"></textarea></div>
+          <div class="field"><label>Current medications</label><textarea id="medical-medications" rows="2" placeholder="e.g. metformin, thyroid medication…"></textarea></div>
+          <div class="field"><label>Anything else your coach should know</label><textarea id="medical-notes" rows="3"></textarea></div>
+          <div class="success-text" id="medical-success" style="display:none;">Saved.</div>
+          <div class="error-text" id="medical-error" style="display:none;"></div>
+          <button class="btn btn-primary btn-sm" onclick="saveMedicalDetails()">Save</button>
+        </div>
+      </div>
+
+      <div class="view" id="view-contact"><div class="card" id="contact-card"></div></div>
+
+      <!-- PAYMENT -->
+      <div class="view" id="view-payment"><div class="card" id="payment-card"></div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="add-item-modal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="add-item-title">Add item</h3><button class="modal-close" onclick="closeModal('add-item-modal')">×</button></div>
+    <div class="field"><label>Label</label><input type="text" id="add-item-label"></div>
+    <div class="error-text" id="add-item-error" style="display:none;"></div>
+    <button class="btn btn-primary btn-sm" onclick="submitAddItem()">Add</button>
+  </div>
+</div>
+
+<!-- PROFILE popup -->
+<!-- Plan details — "what this plan offers", from the Payment page's Details button -->
+<div class="modal-backdrop" id="plan-details-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="plan-details-title"></h3>
+      <button class="modal-close" onclick="closeModal('plan-details-modal')">×</button>
+    </div>
+    <div id="plan-details-body"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="profile-modal">
+  <div class="modal">
+    <div class="modal-head"><h3>Your profile</h3><button class="modal-close" onclick="closeModal('profile-modal')">×</button></div>
+    <div id="profile-modal-body"><p class="hint">Loading…</p></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="pause-modal">
+  <div class="modal">
+    <div class="modal-head"><h3>Pause fasting</h3><button class="modal-close" onclick="closeModal('pause-modal')">×</button></div>
+    <p class="hint">Illness, travel, medical advice or medication — your streak is protected while paused.</p>
+    <div class="field" style="margin-top:14px;"><label>Reason</label><input type="text" id="pause-reason-input"></div>
+    <button class="btn btn-primary btn-sm" onclick="pauseFasting()">Pause</button>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/client.js"></script>
+</body>
+</html>
